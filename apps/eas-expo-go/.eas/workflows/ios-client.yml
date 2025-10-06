@@ -30,7 +30,7 @@ concurrency:
 
 # note that there are also hooks in the `scripts` directory that run at different moments of the build process such as checking out the react-native submodule
 jobs:
-  build-ios:
+  build_ios:
     # TODO vonovak: the original GH action ran conditionally https://github.com/expo/expo/pull/25607 - not able to express that with EAS Workflows as of 8/25
     name: iOS Client Build
     type: build
@@ -42,14 +42,19 @@ jobs:
 
   notify_failure:
     name: 🔔 Notify on Slack
-    after: [build-ios]
-    env:
-      BUILD_STATUS: ${{ after.build-ios.outputs.status }}
-      BUILD_ID: ${{ after.build-ios.outputs.build_id }}
-      COMMIT_SHA: ${{ github.sha }}
-      BRANCH: ${{ github.ref_name }}
+    after: [build_ios]
     steps:
       - run: |
+          BUILD_STATUS="${{ after.build_ios.outputs.status }}"
+          BUILD_ID="${{ after.build_ios.outputs.build_id }}"
+          COMMIT_SHA="${{ github.sha }}"
+          BRANCH="${{ github.ref_name }}"
+
+          echo "Build Status: $BUILD_STATUS"
+          echo "Build ID: $BUILD_ID"
+          echo "Branch: $BRANCH"
+          echo "Commit: $COMMIT_SHA"
+
           if [ "$BUILD_STATUS" = "failure" ]; then
             curl -X POST "$SLACK_WEBHOOK_IOS" \
               -H 'Content-Type: application/json' \
@@ -72,11 +77,11 @@ jobs:
                       },
                       {
                         \"type\": \"mrkdwn\",
-                        \"text\": \"*Branch:*\n$BRANCH\"
+                        \"text\": \"*Branch:*\n<https://github.com/expo/expo/tree/$BRANCH|$BRANCH>\"
                       },
                       {
                         \"type\": \"mrkdwn\",
-                        \"text\": \"*Commit:*\n$COMMIT_SHA\"
+                        \"text\": \"*Commit:*\n<https://github.com/expo/expo/commit/$COMMIT_SHA|$COMMIT_SHA>\"
                       }
                     ]
                   }
